@@ -14,6 +14,7 @@ namespace Task3
         EUR,
         USD,
         YEN
+
     }
 
     public interface IGame
