@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Net;
 using System.Globalization;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Task2
+namespace Task3
 {
     public enum Currency
     {
@@ -20,7 +19,7 @@ namespace Task2
     public interface IGame
     {
         string Description { get; }
-        double GetPrice(Currency currency);
+        decimal GetPrice(Currency currency);
     }
 
     public class DLC : IGame
@@ -43,7 +42,7 @@ namespace Task2
 
         public string Description { get; }
 
-        public Currency Currency { get; }
+        public Currency currency { get; }
 
         public string Code { get; }
 
@@ -52,18 +51,9 @@ namespace Task2
             if (IsDownloaded) throw new InvalidOperationException($"DLC {Code} has already been downloaded!");
         }
 
-        public double GetPrice(Currency currency)
+        public decimal GetPrice(Currency currency)
         {
-            if (currency == Currency) return Amount;
-
-            var from = Currency.ToString();
-            var to = currency.ToString();
-            var url = $"https://api.fixer.io/latest?base={from}&symbols={to}";
-            var data = new WebClient().DownloadString(url);
-            var json = JObject.Parse(data);
-            var rate = decimal.Parse((string)json["rates"][to], CultureInfo.InvariantCulture);
-
-            return Amount * rate;
+            if (this.currency == currency) return Amount;
 
         }
     }
@@ -73,13 +63,14 @@ namespace Task2
         private string title;
         private string console;
         private int year;
-        private double price;
-        private decimal currency;
+        private decimal price;
+        private Currency currency;
+        private decimal Amount;
 
         public string GetTitle() { return title; }
         public string GetConsole() { return console; }
         public int GetYear() { return year; }
-        public double GetPrice() { return price; }
+        public decimal GetPrice() { return price; }
         public string Code { get; }
 
         public void SetYear(int newYear)
@@ -88,35 +79,22 @@ namespace Task2
             year = newYear;
         }
 
-        public void SetPrice(double newPrice)
+        public void SetPrice(decimal newPrice)
         {
             if (newPrice < 0) throw new Exception("Negativer Preis.");
             price = newPrice;
         }
 
-        public double GetPrice(Currency currency)
+        public decimal GetPrice(Currency currency)
         {
-            // if the price is requested in it's own currency, then simply return the stored price
-            if (currency == Currency) return Amount;
-
-            var from = Currency.ToString();
-            var to = currency.ToString();
-
-            var url = $"https://api.fixer.io/latest?base={from}&symbols={to}";
-
-            var data = new WebClient().DownloadString(url);
-
-            var json = JObject.Parse(data);
-             
-            var rate = decimal.Parse((string)json["rates"][to], CultureInfo.InvariantCulture);
-
-
+            
+            if (this.currency == currency) return Amount;
             return Amount * rate;
         }
 
         public string Description => "DLC" + Code;
 
-        public VideoGame(string a, string b, int y, double p, double c)
+        public VideoGame(string a, string b, int y, decimal p, decimal c)
         {
             if (a == null || a == "") throw new Exception("Leerer Titel!");
             if (b == null || b == "") throw new Exception("Keine Konsole definiert!");
