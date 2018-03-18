@@ -55,6 +55,7 @@ namespace Task3
         public decimal GetPrice(Currency currency)
         {
             if (this.currency == currency) return Amount;
+            else throw new ArgumentException("Falsche Währung!", nameof(currency)); 
 
         }
     }
@@ -90,7 +91,7 @@ namespace Task3
         {
             
             if (this.currency == currency) return Amount;
-            return Amount * rate;
+            else throw new ArgumentException("Falsche Währung!", nameof(currency)); 
         }
 
         public string Description => "DLC" + Code;
