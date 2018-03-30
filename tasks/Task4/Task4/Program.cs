@@ -55,7 +55,7 @@ namespace Task4
         string Console { get; }
         int Year { get; }
         Currency Currency { get; }
-        Price price { get; }
+        Price Price { get; }
 
 
         decimal GetPrice();
@@ -72,9 +72,9 @@ namespace Task4
         public int Year { get; }
         public string Code { get; }
         public Currency Currency { get; }
-        public Price price { get; }
+        public Price Price { get; }
 
-        public DLC(string title, string console, int year, Price price, Currency currency)
+        public DLC(string title, string console, int year, Price Price, Currency currency)
         {
             if (Price <= 0) throw new ArgumentException("Der Betrag muss größer als 0 sein!", nameof(Price));
             Title = title;
