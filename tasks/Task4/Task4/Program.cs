@@ -6,8 +6,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
-namespace Task3
+namespace Task4
 {
     public enum Currency
     {
@@ -17,12 +18,44 @@ namespace Task3
 
     }
 
+    public class Price
+    {
+        /// <summary>
+        /// Creates a price in given currency.
+        /// </summary>
+        public Price(decimal amount, Currency unit)
+        {
+            Amount = amount;
+            Unit = unit;
+        }
+
+        /// <summary>
+        /// Gets the amount.
+        /// </summary>
+        public decimal Amount { get; }
+
+        /// <summary>
+        /// Amount's currency.
+        /// </summary>
+        public Currency Unit { get; }
+
+        /// <summary>
+        /// Converts price to given currency.
+        /// </summary>
+        public Price ConvertTo(Currency targetCurrency)
+        {
+            if (targetCurrency == Unit) return this;
+            return new Price(Amount * ExchangeRates.Get(Unit, targetCurrency), targetCurrency);
+        }
+    }
+
     public interface IGame
     {
         string Title { get; }
         string Console { get; }
         int Year { get; }
         Currency Currency { get; }
+        Price price { get; }
 
 
         decimal GetPrice();
@@ -39,16 +72,15 @@ namespace Task3
         public int Year { get; }
         public string Code { get; }
         public Currency Currency { get; }
+        public Price price { get; }
 
-        private decimal price;
-
-        public DLC(string title, string console, int year, decimal price, Currency currency)
+        public DLC(string title, string console, int year, Price price, Currency currency)
         {
-            if (price <= 0) throw new ArgumentException("Der Betrag muss größer als 0 sein!", nameof(price));
+            if (Price <= 0) throw new ArgumentException("Der Betrag muss größer als 0 sein!", nameof(Price));
             Title = title;
             Console = console;
             Year = year;
-            this.price = price;
+            this.Price = Price;
             Currency = currency;
             Code = Guid.NewGuid().ToString();
             IsDownloaded = false;
@@ -61,7 +93,7 @@ namespace Task3
 
         public decimal GetPrice()
         {
-            return price;
+            return Price;
         }
     }
 
@@ -70,8 +102,8 @@ namespace Task3
         private string title;
         private string console;
         private int year;
-        private decimal price;
         private Currency currency;
+        private Price price; 
         private decimal amount;
 
         public string Description { get; }
@@ -80,17 +112,18 @@ namespace Task3
         public int Year { get; }
         public string Code { get; }
         public Currency Currency { get; }
+        public Price Price { get; }
 
-        public VideoGame(string title, string console, int year, decimal price, Currency currency)
+        public VideoGame(string title, string console, int year, Price price, Currency currency)
         {
             if (title == null || title == "") throw new Exception("Leerer Titel!");
             if (console == null || console == "") throw new Exception("Keine Konsole definiert!");
-            if (price < 0) throw new Exception("Negativer Preis!");
+            if (Price < 0) throw new Exception("Negativer Preis!");
             if (year < 1992 || year > 2017) throw new Exception("Undefiniertes Jahr!");
             Title = title;
             Console = console;
             Year = year;
-            SetPrice(price);
+            SetPrice(Price);
             this.currency = currency;
         }
 
@@ -98,12 +131,48 @@ namespace Task3
         public void SetPrice(decimal newPrice)
         {
             if (newPrice < 0) throw new Exception("Negativer Preis.");
-            price = newPrice;
+            Price = newPrice;
         }
 
         public decimal GetPrice()
         {
-            return price;
+            return Price;
+        }
+
+        public static class ExchangeRates
+        {
+            private static Dictionary<string, decimal> s_rates = new Dictionary<string, decimal>();
+
+            /// <summary>
+            /// Gets exchange rate 'from' currency 'to' another currency.
+            /// </summary>
+            public static decimal Get(Currency from, Currency to)
+            {
+                // exchange rate is 1:1 for same currency
+                if (from == to) return 1;
+
+                // use web service to query current exchange rate
+                // request : http://download.finance.yahoo.com/d/quotes.csv?s=EURUSD=X&f=sl1d1t1c1ohgv&e=.csv
+                // response: "EURUSD=X",1.0930,"12/29/2015","6:06pm",-0.0043,1.0971,1.0995,1.0899,0
+                var key = string.Format("{0}{1}", from.ToString(), to.ToString()); // e.g. EURUSD means "How much is 1 EUR in USD?".
+
+                // use web service to query current exchange rate
+                // request : https://api.fixer.io/latest?base=EUR&symbols=USD
+                // response: {"base":"EUR","date":"2018-01-24","rates":{"USD":1.2352}}
+                var url = $"https://api.fixer.io/latest?base={from}&symbols={to}";
+                // download the response as string
+                var data = new WebClient().DownloadString(url);
+                // parse JSON
+                var json = JObject.Parse(data);
+                // convert the exchange rate part to a decimal 
+                var rate = decimal.Parse((string)json["rates"][to.ToString()], CultureInfo.InvariantCulture);
+
+                // cache the exchange rate
+                s_rates[key] = rate;
+
+                // and finally perform the currency conversion
+                return rate;
+            }
         }
 
 
@@ -126,6 +195,8 @@ namespace Task3
                 foreach (var x in games)
                 {
                     Console.WriteLine($"{x.Title,-40} {x.Console,-20} {x.Year,-8} {x.GetPrice()} {x.Currency,-5}");
+                    var currency = Currency.EUR;
+                    Console.WriteLine($"{x.Description.Truncate(50),-50} {x.Price.ConvertTo(currency).Amount,8:0.00} {currency}");
                 }
 
             }
