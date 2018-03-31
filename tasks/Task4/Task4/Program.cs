@@ -49,12 +49,18 @@ namespace Task4
         }
     }
 
+    public static class StringExtensions
+    {
+        public static string Truncate(this string s, int maxLength) => (s == null || s.Length <= maxLength) ? s : s.Substring(0, maxLength);
+    }
+
     public interface IGame
     {
         string Title { get; }
         string Console { get; }
         int Year { get; }
         Price Price { get; }
+        string Description { get; }
 
 
         Price GetPrice();
@@ -195,9 +201,7 @@ namespace Task4
                     Console.WriteLine($"{x.Title,-40} {x.Console,-20} {x.Year,-8} {x.GetPrice()} {x.Price.Unit,-5}");
                     var currency = Currency.EUR;
                     Console.WriteLine($"{x.Description.Truncate(50),-50} {x.Price.ConvertTo(currency).Amount,8:0.00} {currency}");
-                    // du kannst von x keine description holen weil du hier ein objekt vom typ "IGame" hast und in "IGame" ist nicht
-                    // definiert dass es eine Description gibt. Die Description hast du nur im DLC hinzugefügt.. 
-                    // Die Lösung wäre hier einfach die description auch in IGame einzufügen + in VideoGame weil ja VideoGame IGame als interface verwendet und natürlich das gleiche können muss wie IGame 
+
                 }
 
             }
