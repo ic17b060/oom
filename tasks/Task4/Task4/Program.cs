@@ -54,11 +54,10 @@ namespace Task4
         string Title { get; }
         string Console { get; }
         int Year { get; }
-        Currency Currency { get; }
         Price Price { get; }
 
 
-        decimal GetPrice();
+        Price GetPrice();
     }
 
     public class DLC : IGame
@@ -71,17 +70,16 @@ namespace Task4
         public string Console { get; }
         public int Year { get; }
         public string Code { get; }
-        public Currency Currency { get; }
         public Price Price { get; }
 
-        public DLC(string title, string console, int year, Price Price, Currency currency)
+
+        public DLC(string title, string console, int year, Price price)
         {
-            if (Price <= 0) throw new ArgumentException("Der Betrag muss größer als 0 sein!", nameof(Price));
+            if (price.Amount <= 0) throw new ArgumentException("Der Betrag muss größer als 0 sein!", nameof(Price));
             Title = title;
             Console = console;
             Year = year;
-            this.Price = Price;
-            Currency = currency;
+            Price = price;
             Code = Guid.NewGuid().ToString();
             IsDownloaded = false;
         }
@@ -91,7 +89,7 @@ namespace Task4
             if (IsDownloaded) throw new InvalidOperationException($"DLC {Code} has already been downloaded!");
         }
 
-        public decimal GetPrice()
+        public Price GetPrice()
         {
             return Price;
         }
@@ -102,7 +100,6 @@ namespace Task4
         private string title;
         private string console;
         private int year;
-        private Currency currency;
         private Price price; 
         private decimal amount;
 
@@ -112,71 +109,72 @@ namespace Task4
         public int Year { get; }
         public string Code { get; }
         public Currency Currency { get; }
-        public Price Price { get; }
+        public Price Price { get; set; }
 
-        public VideoGame(string title, string console, int year, Price price, Currency currency)
+        public VideoGame(string title, string console, int year, Price price)
         {
             if (title == null || title == "") throw new Exception("Leerer Titel!");
             if (console == null || console == "") throw new Exception("Keine Konsole definiert!");
-            if (Price < 0) throw new Exception("Negativer Preis!");
+            if (price.Amount < 0) throw new Exception("Negativer Preis!");
             if (year < 1992 || year > 2017) throw new Exception("Undefiniertes Jahr!");
             Title = title;
             Console = console;
             Year = year;
-            SetPrice(Price);
-            this.currency = currency;
+            SetPrice(price);
         }
 
 
-        public void SetPrice(decimal newPrice)
+        public void SetPrice(Price newPrice)
         {
-            if (newPrice < 0) throw new Exception("Negativer Preis.");
+            if (newPrice.Amount < 0) throw new Exception("Negativer Preis.");
             Price = newPrice;
         }
 
-        public decimal GetPrice()
+        public Price GetPrice()
         {
             return Price;
         }
 
-        public static class ExchangeRates
-        {
-            private static Dictionary<string, decimal> s_rates = new Dictionary<string, decimal>();
-
-            /// <summary>
-            /// Gets exchange rate 'from' currency 'to' another currency.
-            /// </summary>
-            public static decimal Get(Currency from, Currency to)
-            {
-                // exchange rate is 1:1 for same currency
-                if (from == to) return 1;
-
-                // use web service to query current exchange rate
-                // request : http://download.finance.yahoo.com/d/quotes.csv?s=EURUSD=X&f=sl1d1t1c1ohgv&e=.csv
-                // response: "EURUSD=X",1.0930,"12/29/2015","6:06pm",-0.0043,1.0971,1.0995,1.0899,0
-                var key = string.Format("{0}{1}", from.ToString(), to.ToString()); // e.g. EURUSD means "How much is 1 EUR in USD?".
-
-                // use web service to query current exchange rate
-                // request : https://api.fixer.io/latest?base=EUR&symbols=USD
-                // response: {"base":"EUR","date":"2018-01-24","rates":{"USD":1.2352}}
-                var url = $"https://api.fixer.io/latest?base={from}&symbols={to}";
-                // download the response as string
-                var data = new WebClient().DownloadString(url);
-                // parse JSON
-                var json = JObject.Parse(data);
-                // convert the exchange rate part to a decimal 
-                var rate = decimal.Parse((string)json["rates"][to.ToString()], CultureInfo.InvariantCulture);
-
-                // cache the exchange rate
-                s_rates[key] = rate;
-
-                // and finally perform the currency conversion
-                return rate;
-            }
-        }
 
 
     }
+
+    public static class ExchangeRates
+    {
+        private static Dictionary<string, decimal> s_rates = new Dictionary<string, decimal>();
+
+        /// <summary>
+        /// Gets exchange rate 'from' currency 'to' another currency.
+        /// </summary>
+        public static decimal Get(Currency from, Currency to)
+        {
+            // exchange rate is 1:1 for same currency
+            if (from == to) return 1;
+
+            // use web service to query current exchange rate
+            // request : http://download.finance.yahoo.com/d/quotes.csv?s=EURUSD=X&f=sl1d1t1c1ohgv&e=.csv
+            // response: "EURUSD=X",1.0930,"12/29/2015","6:06pm",-0.0043,1.0971,1.0995,1.0899,0
+            var key = string.Format("{0}{1}", from.ToString(), to.ToString()); // e.g. EURUSD means "How much is 1 EUR in USD?".
+
+            // use web service to query current exchange rate
+            // request : https://api.fixer.io/latest?base=EUR&symbols=USD
+            // response: {"base":"EUR","date":"2018-01-24","rates":{"USD":1.2352}}
+            var url = $"https://api.fixer.io/latest?base={from}&symbols={to}";
+            // download the response as string
+            var data = new WebClient().DownloadString(url);
+            // parse JSON
+            var json = JObject.Parse(data);
+            // convert the exchange rate part to a decimal 
+            var rate = decimal.Parse((string)json["rates"][to.ToString()], CultureInfo.InvariantCulture);
+
+            // cache the exchange rate
+            s_rates[key] = rate;
+
+            // and finally perform the currency conversion
+            return rate;
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
@@ -185,18 +183,21 @@ namespace Task4
             {
                 var games = new IGame[]
                 {
-                    new VideoGame("The Legend of Zelda: A Link to the Past", "Super Nintendo", 1992, 25.13m, Currency.EUR),
-                    new VideoGame("Donkey Kong Country", "Super Nintendo", 1994, 28.15m, Currency.EUR),
-                    new VideoGame("Final Fantasy 8", "Playstation", 1999, 2800m, Currency.YEN),
-                    new VideoGame("The Last of Us", "Playstation 4", 2013, 75.68m, Currency.USD),
-                    new DLC("Final Fantasy XV DLC 4", "Playstation 4", 2017, 7.90m, Currency.EUR)
+                    new VideoGame("The Legend of Zelda: A Link to the Past", "Super Nintendo", 1992, new Price(25.13m, Currency.EUR)),
+                    new VideoGame("Donkey Kong Country", "Super Nintendo", 1994, new Price(28.15m, Currency.EUR)),
+                    new VideoGame("Final Fantasy 8", "Playstation", 1999, new Price(2800m, Currency.YEN)),
+                    new VideoGame("The Last of Us", "Playstation 4", 2013, new Price(75.68m, Currency.USD)),
+                    new DLC("Final Fantasy XV DLC 4", "Playstation 4", 2017, new Price(7.90m, Currency.EUR))
                 };
 
                 foreach (var x in games)
                 {
-                    Console.WriteLine($"{x.Title,-40} {x.Console,-20} {x.Year,-8} {x.GetPrice()} {x.Currency,-5}");
+                    Console.WriteLine($"{x.Title,-40} {x.Console,-20} {x.Year,-8} {x.GetPrice()} {x.Price.Unit,-5}");
                     var currency = Currency.EUR;
                     Console.WriteLine($"{x.Description.Truncate(50),-50} {x.Price.ConvertTo(currency).Amount,8:0.00} {currency}");
+                    // du kannst von x keine description holen weil du hier ein objekt vom typ "IGame" hast und in "IGame" ist nicht
+                    // definiert dass es eine Description gibt. Die Description hast du nur im DLC hinzugefügt.. 
+                    // Die Lösung wäre hier einfach die description auch in IGame einzufügen + in VideoGame weil ja VideoGame IGame als interface verwendet und natürlich das gleiche können muss wie IGame 
                 }
 
             }
