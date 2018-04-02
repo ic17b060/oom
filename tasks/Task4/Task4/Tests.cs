@@ -54,6 +54,26 @@ namespace Task4
         }
 
         [Test]
+        public void ExchangeRateForDifferentCurrencyIsNotOne()
+        {
+            var x = ExchangeRates.Get(Currency.EUR, Currency.JPY);
+            Assert.IsTrue(x != 1);
+        }
+
+        [Test]
+        public void CanCreateDLC()
+        {
+            var x = new DLC("TestTitle", "TestConsole", 2018, new Price(20m, Currency.USD));
+
+            Assert.IsTrue(x.Title == "TestTitle");
+            Assert.IsTrue(x.Console == "TestConsole");
+            Assert.IsTrue(x.Year == 2018);
+            Assert.IsTrue(x.Price.Amount == 20m);
+            Assert.IsTrue(x.Price.Unit == Currency.USD);
+            Assert.IsTrue(x.IsDownloaded == false);
+        }
+
+        [Test]
         public void CanDownloadDLC()
         {
             var x = new DLC("Final Fantasy XV DLC 4", "Playstation 4", 2017, new Price(8.90m, Currency.EUR));

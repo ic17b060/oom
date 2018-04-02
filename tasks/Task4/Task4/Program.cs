@@ -7,142 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace Task4
 {
-    public enum Currency
-    {
-        EUR,
-        USD,
-        YEN
-
-    }
-
-    public class Price
-    {
-        /// <summary>
-        /// Creates a price in given currency.
-        /// </summary>
-        public Price(decimal amount, Currency unit)
-        {
-            Amount = amount;
-            Unit = unit;
-        }
-
-        /// <summary>
-        /// Gets the amount.
-        /// </summary>
-        public decimal Amount { get; }
-
-        /// <summary>
-        /// Amount's currency.
-        /// </summary>
-        public Currency Unit { get; }
-
-        /// <summary>
-        /// Converts price to given currency.
-        /// </summary>
-        public Price ConvertTo(Currency targetCurrency)
-        {
-            if (targetCurrency == Unit) return this;
-            return new Price(Amount * ExchangeRates.Get(Unit, targetCurrency), targetCurrency);
-        }
-    }
-
     public static class StringExtensions
     {
         public static string Truncate(this string s, int maxLength) => (s == null || s.Length <= maxLength) ? s : s.Substring(0, maxLength);
-    }
-
-    public interface IGame
-    {
-        string Title { get; }
-        string Console { get; }
-        int Year { get; }
-        Price Price { get; }
-        string Description { get; }
-
-
-        Price GetPrice();
-    }
-
-    public class DLC : IGame
-    {
-
-        public bool IsDownloaded { get; private set; }
-
-        public string Description { get; }
-        public string Title { get; }
-        public string Console { get; }
-        public int Year { get; }
-        public string Code { get; }
-        public Price Price { get; }
-
-
-        public DLC(string title, string console, int year, Price price)
-        {
-            if (price.Amount <= 0) throw new ArgumentException("Der Betrag muss größer als 0 sein!", nameof(Price));
-            Title = title;
-            Console = console;
-            Year = year;
-            Price = price;
-            Code = Guid.NewGuid().ToString();
-            IsDownloaded = false;
-        }
-
-        public void Download()
-        {
-            if (IsDownloaded) throw new InvalidOperationException($"DLC {Code} has already been downloaded!");
-        }
-
-        public Price GetPrice()
-        {
-            return Price;
-        }
-    }
-
-    public class VideoGame : IGame
-    {
-        private string title;
-        private string console;
-        private int year;
-        private Price price; 
-        private decimal amount;
-
-        public string Description { get; }
-        public string Title { get; }
-        public string Console { get; }
-        public int Year { get; }
-        public string Code { get; }
-        public Currency Currency { get; }
-        public Price Price { get; set; }
-
-        public VideoGame(string title, string console, int year, Price price)
-        {
-            if (title == null || title == "") throw new Exception("Leerer Titel!");
-            if (console == null || console == "") throw new Exception("Keine Konsole definiert!");
-            if (price.Amount < 0) throw new Exception("Negativer Preis!");
-            if (year < 1992 || year > 2017) throw new Exception("Undefiniertes Jahr!");
-            Title = title;
-            Console = console;
-            Year = year;
-            SetPrice(price);
-        }
-
-
-        public void SetPrice(Price newPrice)
-        {
-            if (newPrice.Amount < 0) throw new Exception("Negativer Preis.");
-            Price = newPrice;
-        }
-
-        public Price GetPrice()
-        {
-            return Price;
-        }
-
-
-
     }
 
     public static class ExchangeRates
@@ -181,6 +52,130 @@ namespace Task4
         }
     }
 
+
+    public enum Currency
+    {
+        EUR,
+        USD,
+        GBP,
+        JPY
+
+    }
+
+    public class Price
+    {
+       
+        public Price(decimal amount, Currency unit)
+        {
+            Amount = amount;
+            Unit = unit;
+        }
+
+        public decimal Amount { get; }
+
+
+        public Currency Unit { get; }
+
+
+        public Price ConvertTo(Currency targetCurrency)
+        {
+            if (targetCurrency == Unit) return this;
+            return new Price(Amount * ExchangeRates.Get(Unit, targetCurrency), targetCurrency);
+        }
+    }
+
+    public interface IGame
+    {
+        string Title { get; }
+        string Console { get; }
+        string Description { get; }
+        int Year { get; }
+        Price Price { get; }
+
+        void ChangePrice(Price newPrice);
+        void AddDescription(String description);
+    }
+
+    public class DLC : IGame
+    {
+
+        public string Title { get; }
+        public string Console { get; }
+        public string Description { get; set; }
+        public int Year { get; }
+        public Price Price { get; private set; }
+
+        public string Code { get; }
+        public bool IsDownloaded { get; private set; }
+
+
+        public DLC(string title, string console, int year, Price price)
+        {
+            if (title == null || title == "") throw new Exception("Leerer Titel!");
+            if (console == null || console == "") throw new Exception("Keine Konsole definiert!");
+            if (year < 1992 || year > 2018) throw new Exception("Undefiniertes Jahr!");
+
+            Title = title;
+            Console = console;
+            Year = year;
+            ChangePrice(price);
+
+            IsDownloaded = false;
+        }
+
+        public void Download()
+        {
+            if (IsDownloaded) throw new InvalidOperationException($"DLC \"{Title}\" has already been downloaded!");
+            else
+            {
+                IsDownloaded = true;   
+            }
+        }
+
+        public void ChangePrice (Price newPrice)
+        {
+            if (newPrice.Amount <= 0) throw new ArgumentException("Der Betrag muss größer als 0 sein!", nameof(Price));
+            Price = newPrice;
+        }
+
+        public void AddDescription(String description)
+        {
+            Description = description;
+        }
+    }
+
+    public class VideoGame : IGame
+    {
+        public string Title { get; }
+        public string Console { get; }
+        public string Description { get; private set; }
+        public int Year { get; }
+        public Price Price { get; private set; }
+
+        public VideoGame(string title, string console, int year, Price price)
+        {
+            if (title == null || title == "") throw new Exception("Leerer Titel!");
+            if (console == null || console == "") throw new Exception("Keine Konsole definiert!");
+            if (year < 1992 || year > 2017) throw new Exception("Undefiniertes Jahr!");
+
+            Title = title;
+            Console = console;
+            Year = year;
+            ChangePrice(price);
+        }
+
+        public void ChangePrice(Price newPrice)
+        {
+            if (newPrice.Amount < 0) throw new ArgumentException("Der Betrag muss größer als 0 sein!", nameof(Price));
+            Price = newPrice;
+        }
+
+        public void AddDescription(String description)
+        {
+            Description = description;
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
@@ -191,16 +186,22 @@ namespace Task4
                 {
                     new VideoGame("The Legend of Zelda: A Link to the Past", "Super Nintendo", 1992, new Price(25.13m, Currency.EUR)),
                     new VideoGame("Donkey Kong Country", "Super Nintendo", 1994, new Price(28.15m, Currency.EUR)),
-                    new VideoGame("Final Fantasy 8", "Playstation", 1999, new Price(2800m, Currency.YEN)),
+                    new VideoGame("Final Fantasy 8", "Playstation", 1999, new Price(2800m, Currency.JPY)),
                     new VideoGame("The Last of Us", "Playstation 4", 2013, new Price(75.68m, Currency.USD)),
                     new DLC("Final Fantasy XV DLC 4", "Playstation 4", 2017, new Price(7.90m, Currency.EUR))
                 };
 
+                games[0].AddDescription("The Legend of Zelda: A Link to the Past is an action-adventure video game developed and published by Nintendo");
+                games[1].AddDescription("Donkey Kong Country[a] is a 1994 platform game developed by Rare and published by Nintendo");
+                games[2].AddDescription("Final Fantasy 8 is a 1999 role-playing game developed by Squaresoft");
+
                 foreach (var x in games)
                 {
-                    Console.WriteLine($"{x.Title,-40} {x.Console,-20} {x.Year,-8} {x.GetPrice()} {x.Price.Unit,-5}");
+                    Console.WriteLine($"{x.Title,-40} \n\t{x.Console,-15} \n\t{x.Year,-5} \n\tPrice:\t\t\t{x.Price.Unit,-4} {x.Price.Amount,10:0.00} ");
                     var currency = Currency.EUR;
-                    Console.WriteLine($"{x.Description.Truncate(50),-50} {x.Price.ConvertTo(currency).Amount,8:0.00} {currency}");
+                    Console.WriteLine($"\tConverted Price:\t{currency,-4} {x.Price.ConvertTo(currency).Amount,10:0.00} ");
+                    Console.WriteLine($"\tDescription: {x.Description.Truncate(50)}");
+                    Console.WriteLine("\n");
 
                 }
 
@@ -211,5 +212,20 @@ namespace Task4
             }
         }
 
+    }
+
+    class SerializationVideoGames
+    {
+        public static void Run(IGame[] games)
+        {
+            var VideoGame = games[0];
+
+            Console.WriteLine(JsonConvert.SerializeObject(VideoGame));
+
+            Console.WriteLine(JsonConvert.SerializeObject(VideoGame, Formatting.Indented));
+
+            var settings = new JsonSerializerSettings() { Formatting = Formatting.Indented, TypeNameHandling = TypeNameHandling.Auto };
+            Console.WriteLine(JsonConvert.SerializeObject (games, settings));
+        }
     }
 }
