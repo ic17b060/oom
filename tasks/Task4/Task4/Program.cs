@@ -192,7 +192,7 @@ namespace Task4
                 };
 
                 games[0].AddDescription("The Legend of Zelda: A Link to the Past is an action-adventure video game developed and published by Nintendo");
-                games[1].AddDescription("Donkey Kong Country[a] is a 1994 platform game developed by Rare and published by Nintendo");
+                games[1].AddDescription("Donkey Kong Country is a 1994 platform game developed by Rare and published by Nintendo");
                 games[2].AddDescription("Final Fantasy 8 is a 1999 role-playing game developed by Squaresoft");
 
                 foreach (var x in games)
@@ -205,6 +205,20 @@ namespace Task4
 
                 }
 
+                var settings = new JsonSerializerSettings() { Formatting = Formatting.Indented, TypeNameHandling = TypeNameHandling.Auto };
+                var text = JsonConvert.SerializeObject(games, settings);
+                var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                var filename = Path.Combine(desktop, "games.json");
+                File.WriteAllText(filename, text);
+                var textFromFile = File.ReadAllText(filename);
+                var itemsFromFile = JsonConvert.DeserializeObject<IGame[]>(textFromFile, settings);
+
+                foreach (var x in itemsFromFile)
+                {
+                    Console.WriteLine($"{x.Title,-40} \n\t{x.Console,-15}  \n\t{x.Year,-5} \n\tPrice:\t\t\t{x.Price.Unit,-4} {x.Price.Amount,10:0.00}");
+                    Console.WriteLine("\n");
+                }
+
             }
             catch (IndexOutOfRangeException)
             {
@@ -214,18 +228,4 @@ namespace Task4
 
     }
 
-    class SerializationVideoGames
-    {
-        public static void Run(IGame[] games)
-        {
-            var VideoGame = games[0];
-
-            Console.WriteLine(JsonConvert.SerializeObject(VideoGame));
-
-            Console.WriteLine(JsonConvert.SerializeObject(VideoGame, Formatting.Indented));
-
-            var settings = new JsonSerializerSettings() { Formatting = Formatting.Indented, TypeNameHandling = TypeNameHandling.Auto };
-            Console.WriteLine(JsonConvert.SerializeObject (games, settings));
-        }
-    }
 }
